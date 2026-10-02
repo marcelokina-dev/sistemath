@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Não redireciona se for um arquivo ou pasta real (css, imagens, etc)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Redireciona tudo para o index.php
+RewriteRule ^(.*)$ index.php [L,QSA]
