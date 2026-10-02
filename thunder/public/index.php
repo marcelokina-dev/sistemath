@@ -33,6 +33,7 @@ require_once __DIR__ . '/../app/controllers/EventosController.php';
 require_once __DIR__ . '/../app/controllers/RankingController.php';
 require_once __DIR__ . '/../app/controllers/HistoricoController.php';
 require_once __DIR__ . '/../app/controllers/ImportacaoController.php';
+require_once __DIR__ . '/../app/controllers/TapologyController.php';
 
 // --- MODELS ---
 require_once __DIR__ . '/../app/models/AtletaModel.php';
@@ -155,6 +156,9 @@ $router->add('/eventos/salvar-resultado', 'EventosController', 'salvarResultado'
 // --- Importacao em Massa ---
 $router->add('/importacao', 'ImportacaoController', 'index');
 $router->add('/importacao/processar', 'ImportacaoController', 'processar');
+$router->add('/importacao/tapology', 'TapologyController', 'index');
+$router->add('/importacao/tapology/analisar', 'TapologyController', 'analisar');
+$router->add('/importacao/tapology/importar', 'TapologyController', 'importar');
 
 
 // ==========================================
