@@ -1,277 +1,102 @@
-<?php
-$temErro = !empty($relatorio) && strpos(implode('', $relatorio), '❌') !== false;
-?>
-
 <div class="container-fluid p-4">
+    <h2 class="mb-3"><i class="fas fa-bolt"></i> Importação em Massa</h2>
+    <p class="text-muted">Cole os dados de um evento inteiro (atletas + card de lutas com resultado) e cadastre tudo de uma vez, em vez de formulário por formulário.</p>
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <div>
-            <h2 class="mb-1">
-                <i class="fas fa-bolt text-danger"></i> Importação em Massa
-            </h2>
-            <p class="text-muted mb-0">
-                Cadastre atletas e importe o card completo de um evento em uma única operação.
-            </p>
-        </div>
-
-        <a href="<?= $this->url('/tapology') ?>" class="btn btn-outline-danger">
-            <i class="fas fa-globe"></i> Importar pelo Tapology
-        </a>
-    </div>
-
+    <?php
+    $temErro = !empty($relatorio) && strpos(implode('', $relatorio), '❌') !== false;
+    $modoAnaliseNoRelatorio = !empty($relatorio) && strpos(implode('', $relatorio), 'MODO ANÁLISE') !== false;
+    $corBorda = $temErro ? 'danger' : ($modoAnaliseNoRelatorio ? 'warning' : 'success');
+    ?>
     <?php if (!empty($relatorio)): ?>
-        <div class="card mb-4 border-<?= $temErro ? 'danger' : 'success' ?>">
+        <div class="card mb-4 border-<?= $corBorda ?>">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>
-                    <i class="fas fa-clipboard-check"></i>
-                    Relatório da última importação
-                </strong>
-                <span class="badge bg-<?= $temErro ? 'danger' : 'success' ?>">
-                    <?= $temErro ? 'ATENÇÃO' : 'CONCLUÍDA' ?>
-                </span>
+                <span><?= $modoAnaliseNoRelatorio ? '🔍 Prévia da importação (nada foi gravado ainda)' : 'Relatório da última importação' ?></span>
             </div>
-
-            <div class="card-body p-0">
-                <div style="max-height:360px; overflow:auto; background:#111; color:#e8e8e8; font-family:Consolas,Monaco,monospace; font-size:13px;">
-                    <?php foreach ($relatorio as $linha): ?>
-                        <?php
-                            $classe = '';
-                            if (strpos($linha, '❌') !== false) {
-                                $classe = 'text-danger';
-                            } elseif (strpos($linha, '✅') !== false) {
-                                $classe = 'text-success';
-                            } elseif (strpos($linha, '⚠️') !== false) {
-                                $classe = 'text-warning';
-                            } elseif (strpos($linha, '⏭️') !== false) {
-                                $classe = 'text-info';
-                            } elseif (strpos($linha, '🆕') !== false) {
-                                $classe = 'text-primary';
-                            }
-                        ?>
-                        <div class="px-3 py-1 <?= $classe ?>">
-                            <?= htmlspecialchars($linha) ?>
-                        </div>
-                    <?php endforeach; ?>
+            <div class="card-body" style="max-height:400px; overflow:auto; background:#111; color:#0f0; font-family: monospace; font-size: 13px;">
+                <?php foreach ($relatorio as $linha): ?>
+                    <div><?= htmlspecialchars($linha) ?></div>
+                <?php endforeach; ?>
+            </div>
+            <?php if ($modoAnaliseNoRelatorio && !$temErro): ?>
+                <div class="card-footer bg-warning-subtle">
+                    Confira as linhas <strong>🟡 (novo)</strong> e <strong>🟢 (já existente)</strong> acima. Se estiver tudo certo,
+                    role até o fim do formulário e clique em <strong>"✅ Confirmar e Importar"</strong> — os campos abaixo já
+                    continuam preenchidos com o que você colou.
                 </div>
-            </div>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
-    <form method="POST" action="<?= $this->url('/importacao/processar') ?>">
+    <form method="POST" action="<?= $this->url('/importacao/processar') ?>" id="form-importacao">
 
-        <!-- EVENTO -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-danger text-white">
-                <strong>
-                    <i class="fas fa-calendar-alt"></i>
-                    1. Evento
-                </strong>
-                <span class="float-end small">
-                    obrigatório para importar o card
-                </span>
-            </div>
-
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">1. Evento (obrigatório só se for importar o card de lutas)</div>
             <div class="card-body">
-                <select name="id_evento" class="form-select form-select-lg">
+                <select name="id_evento" class="form-select">
                     <option value="">-- Selecione o evento --</option>
-
                     <?php foreach ($eventos as $e): ?>
-                        <option value="<?= (int)$e['id_evento'] ?>">
-                            <?= htmlspecialchars($e['nome']) ?>
-                            (<?= htmlspecialchars($e['data_evento']) ?>)
-                            — <?= htmlspecialchars($e['slugs']) ?>
+                        <option value="<?= $e['id_evento'] ?>" <?= (!empty($formAnterior['id_evento']) && $formAnterior['id_evento'] == $e['id_evento']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($e['nome']) ?> (<?= $e['data_evento'] ?>) — <?= htmlspecialchars($e['slugs']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
         </div>
 
-        <!-- ATLETAS -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white">
-                <strong>
-                    <i class="fas fa-user-friends"></i>
-                    2. Atletas
-                </strong>
-                <span class="float-end small">
-                    opcional
-                </span>
-            </div>
-
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">2. Atletas (opcional — enriquece/atualiza perfis: foto, link tapology, equipe, etc.)</div>
             <div class="card-body">
-
-                <div class="alert alert-light border mb-3">
-                    <strong>Use esta área para cadastrar ou atualizar atletas.</strong>
-                    <br>
-                    Se o atleta já existir, o sistema atualiza somente os campos preenchidos.
-                    Se não existir, cria um novo cadastro.
-                </div>
-
-                <p class="mb-2">
-                    <strong>Formato — 1 atleta por linha:</strong>
-                </p>
-
-                <div class="bg-light border rounded p-2 mb-3 small">
-                    <code>
-                        nome | sobrenome | apelido | sexo(M/F) | nacionalidade |
-                        modalidade(P/A) | categoria | peso(kg) | altura(m) |
-                        equipe | vitorias | derrotas | empates | tapology_url | sherdog_url
-                    </code>
-                </div>
-
-                <div class="row g-2 mb-3">
-                    <div class="col-md-6">
-                        <div class="small text-muted">
-                            <strong>Modalidade:</strong>
-                            P = MMA Profissional · A = MMA Amador
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="small text-muted">
-                            <strong>Categoria:</strong>
-                            nome da categoria ou peso em kg.
-                        </div>
-                    </div>
-                </div>
-
-                <textarea
-                    name="roster"
-                    rows="8"
-                    class="form-control font-monospace"
-                    placeholder="Isabela|Oliveira||F|Brasileira|P|Peso Leve|70|1.69|Equipe|1|0|0|https://www.tapology.com/fightcenter/fighters/492226-isabela-oliveira|
-Arthur|Portes|Zig|M|Brasileiro|A|Peso Meio-Médio|70|1.70|Equipe|3|1|0|https://www.tapology.com/fightcenter/fighters/274412-arthur-portes|"
-                ></textarea>
-
-                <div class="form-text mt-2">
-                    A URL do Tapology é opcional nesta importação manual.
-                </div>
+                <p class="mb-2"><strong>Formato (1 por linha), campos separados por <code>|</code>:</strong></p>
+                <code class="d-block mb-2">nome | sobrenome | apelido | sexo(M/F) | nacionalidade | modalidade(P/A) | categoria | peso(kg) | altura(m) | equipe | vitorias | derrotas | empates | tapology_url | sherdog_url</code>
+                <ul class="small text-muted">
+                    <li>Só "nome" é obrigatório. Se o atleta já existir (<strong>agora casado primeiro pela URL do Tapology, e só depois pelo nome</strong>), os dados são <u>atualizados</u> em vez de duplicados.</li>
+                    <li><strong>modalidade</strong>: P = MMA Profissional (id 1), A = MMA Amador (id 2) — copie do "Pro MMA Record" / "Amateur MMA Record" do Tapology.</li>
+                    <li><strong>categoria</strong>: nome da categoria de peso (ex: "Peso Leve") — usa a modalidade + sexo pra achar a certa.</li>
+                    <li><strong>vitorias/derrotas/empates</strong>: cartel (profissional OU amador, o que estiver no perfil do Tapology).</li>
+                    <li>Equipe é criada automaticamente se não existir.</li>
+                </ul>
+                <textarea name="roster" rows="8" class="form-control" placeholder="Isabela|Oliveira||F|Brasileira|P|Peso Leve|70|1.69|GAEA Project|1|0|0|https://www.tapology.com/fightcenter/fighters/492226-isabela-oliveira|
+Arthur|Portes|Zig|M|Brasileiro|A|Peso Meio-Médio|70|1.70|IronBrothers|3|1|0|https://www.tapology.com/fightcenter/fighters/274412-arthur-portes|"><?= htmlspecialchars($formAnterior['roster'] ?? '') ?></textarea>
             </div>
         </div>
 
-        <!-- CARD -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white">
-                <strong>
-                    <i class="fas fa-fist-raised"></i>
-                    3. Card de Lutas
-                </strong>
-                <span class="float-end small">
-                    importa as lutas já com resultado
-                </span>
-            </div>
-
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">3. Card de Lutas (o principal — cria as lutas já com resultado)</div>
             <div class="card-body">
-
-                <p class="mb-2">
-                    <strong>Formato — 1 luta por linha:</strong>
-                </p>
-
-                <div class="bg-light border rounded p-2 mb-3 small">
-                    <code>
-                        ordem | vermelho | azul | vencedor(V/A/E) | método |
-                        round | tempo(mm:ss) | rounds | modalidade |
-                        categoria | árbitro | cinturão(0/1)
-                    </code>
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <div class="border rounded p-3 h-100">
-                            <strong><i class="fas fa-users"></i> Atletas</strong>
-                            <p class="small text-muted mb-0 mt-1">
-                                Use o ID do atleta, por exemplo <code>1809</code>,
-                                ou nome completo.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="border rounded p-3 h-100">
-                            <strong><i class="fas fa-trophy"></i> Resultado</strong>
-                            <p class="small text-muted mb-0 mt-1">
-                                V = vermelho · A = azul · E = empate/NC.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="border rounded p-3 h-100">
-                            <strong><i class="fas fa-layer-group"></i> Modalidade</strong>
-                            <p class="small text-muted mb-0 mt-1">
-                                P = profissional · A = amador ·
-                                ou informe o ID diretamente.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
+                <p class="mb-2"><strong>Formato (1 por linha), campos separados por <code>|</code>:</strong></p>
+                <code class="d-block mb-2">ordem | vermelho(URL_tapology_ou_ID_ou_nome,apelido,sexo) | azul(idem) | vencedor(V/A/E) | metodo(sigla) | round | tempo(mm:ss) | num_rounds | modalidade(P/A/ID) | categoria | arbitro | vale_cinturao(0/1)</code>
                 <ul class="small text-muted">
                     <li>
-                        <strong>Método:</strong>
-                        <?= htmlspecialchars(implode(', ', array_map(fn($m) => $m['sigla'], $metodos))) ?>
+                        <strong>vermelho/azul</strong> aceita, nessa ordem de prioridade:
+                        <br>1) <strong>link do Tapology do atleta</strong> (ex: <code>https://www.tapology.com/fightcenter/fighters/492226-isabela-oliveira</code>) — identificação à prova de homônimo; se o atleta não existir ainda, o sistema <strong>busca o perfil sozinho</strong> e já cria com categoria, equipe e cartel preenchidos;
+                        <br>2) <strong>ID do atleta já cadastrado</strong> (ex: <code>1809</code>);
+                        <br>3) <code>nome,apelido,sexo</code> pra um atleta novo/existente por nome.
                     </li>
-                    <li>
-                        <strong>Categoria:</strong>
-                        nome, ID ou peso em kg (ex.: <code>61kg</code>).
-                    </li>
-                    <li>
-                        <strong>Árbitro:</strong>
-                        se não existir, será cadastrado automaticamente.
-                    </li>
-                    <li>
-                        <strong>MMA Amador:</strong>
-                        decisão UD/SD/MD sem tempo informado recebe automaticamente
-                        <code>3:00</code>.
-                    </li>
-                    <li>
-                        Linhas iniciadas por <code>#</code> são ignoradas.
-                    </li>
+                    <li><strong>vencedor</strong>: V = vermelho venceu, A = azul venceu, E = empate/no contest</li>
+                    <li><strong>metodo (sigla)</strong>: <?= implode(', ', array_map(fn($m) => $m['sigla'], $metodos)) ?></li>
+                    <li><strong>modalidade</strong>: P=MMA Profissional(1), A=MMA Amador(2), ou o ID numérico direto (ex: 5=Kickboxing). Em branco = usa a modalidade do evento selecionado acima.</li>
+                    <li><strong>categoria</strong>: nome (ex: "Peso Pena"), ID numérico, ou <strong>peso em kg</strong> (ex: "61kg") — nesse caso o sistema acha sozinho a categoria certa pela faixa de peso/sexo/modalidade.</li>
+                    <li><strong>arbitro</strong>: nome do árbitro central. Se não existir no banco, é criado automaticamente. Deixe em branco se não informado.</li>
+                    <li>Se o <strong>método for decisão (UD/SD/MD)</strong>, a luta for do <strong>evento MMA Amador</strong> e o <strong>tempo</strong> ficar em branco, o sistema preenche automaticamente com <strong>3:00</strong>.</li>
+                    <li>Linhas iniciadas com <code>#</code> são ignoradas (comentários).</li>
                 </ul>
-
-                <textarea
-                    name="card"
-                    rows="14"
-                    class="form-control font-monospace"
-                    placeholder="1|Fulano da Silva,Fulaninho,M|Ciclano Souza,,M|V|SUB|1|2:18|3||Peso Pena|Anderson Ullysess|0
+                <textarea name="card" rows="14" class="form-control" placeholder="1|https://www.tapology.com/fightcenter/fighters/309287-luiz-gustavo-rossi|Jonathan Willy,,M|V|SUB|1|1:09|3|2|Peso Leve|Eduardo Mello|0
 2|1631|1809|V|KO|2|1:30|3|5|71kg|Anderson Ullysess|0
-3|1811|1440|A|UD|3||3|1|61kg|Anderson Ullysess|0"
-                ></textarea>
+3|1811|1440|A|UD|3||3|1|61kg|Anderson Ullysess|0"><?= htmlspecialchars($formAnterior['card'] ?? '') ?></textarea>
             </div>
         </div>
 
-        <!-- AÇÕES -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
-
-                <div>
-                    <strong>
-                        <i class="fas fa-database"></i>
-                        Pronto para importar
-                    </strong>
-                    <div class="small text-muted">
-                        A operação é feita em uma única transação.
-                        Se ocorrer erro, os dados da operação são revertidos.
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <a
-                        href="<?= $this->url('/tapology') ?>"
-                        class="btn btn-outline-secondary"
-                    >
-                        <i class="fas fa-globe"></i>
-                        Usar Tapology
-                    </a>
-
-                    <button type="submit" class="btn btn-danger btn-lg">
-                        <i class="fas fa-upload"></i>
-                        Processar Importação
-                    </button>
-                </div>
-
-            </div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button type="submit" name="modo_analise" value="1" class="btn btn-outline-warning btn-lg">
+                <i class="fas fa-magnifying-glass"></i> 🔍 Analisar (não grava nada)
+            </button>
+            <button type="submit" class="btn btn-danger btn-lg">
+                <i class="fas fa-upload"></i> ✅ Confirmar e Importar
+            </button>
+            <span class="text-muted small">
+                Recomendado: clique em <strong>Analisar</strong> primeiro pra conferir quem vai ser criado/atualizado,
+                só depois em <strong>Confirmar e Importar</strong>.
+            </span>
         </div>
-
     </form>
-
 </div>
