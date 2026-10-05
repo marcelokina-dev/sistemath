@@ -7,6 +7,12 @@
 // 1. CONFIGURAÇÕES GLOBAIS (Primeira coisa a carregar)
 require_once __DIR__ . '/../core/Config.php';
 
+// Sessão global: relatórios e prévias dos fluxos de importação
+// precisam permanecer disponíveis após o redirect.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
