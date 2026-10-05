@@ -162,6 +162,12 @@ $router->add('/eventos/salvar-resultado', 'EventosController', 'salvarResultado'
 // --- Importacao em Massa ---
 $router->add('/importacao', 'ImportacaoController', 'index');
 $router->add('/importacao/processar', 'ImportacaoController', 'processar');
+// --- Importação do Tapology ---
+$router->add('/tapology', 'TapologyController', 'index');
+$router->add('/tapology/analisar', 'TapologyController', 'analisar');
+$router->add('/tapology/importar', 'TapologyController', 'importar');
+
+// Compatibilidade com links/formulários antigos
 $router->add('/importacao/tapology', 'TapologyController', 'index');
 $router->add('/importacao/tapology/analisar', 'TapologyController', 'analisar');
 $router->add('/importacao/tapology/importar', 'TapologyController', 'importar');
